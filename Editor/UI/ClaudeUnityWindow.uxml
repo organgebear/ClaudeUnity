@@ -1,0 +1,90 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="root" class="claude-root">
+
+        <!-- Toolbar -->
+        <ui:VisualElement name="toolbar" class="toolbar">
+            <ui:VisualElement class="toolbar-left">
+                <ui:Label text="Claude Unity" class="toolbar-title"/>
+                <ui:Label name="status-label" text="" class="toolbar-status"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="toolbar-right">
+                <ui:Button name="new-chat-btn" text="+" tooltip="New Chat" class="toolbar-btn"/>
+                <ui:Button name="settings-btn" text="&#9881;" tooltip="Settings" class="toolbar-btn"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Chat Area -->
+        <ui:ScrollView name="chat-scroll" class="chat-scroll"
+                       vertical-scroller-visibility="Auto"
+                       horizontal-scroller-visibility="Hidden">
+            <ui:VisualElement name="chat-container" class="chat-container">
+                <!-- Welcome message -->
+                <ui:VisualElement name="welcome" class="welcome-container">
+                    <ui:Label text="Claude Unity" class="welcome-title"/>
+                    <ui:Label text="AI-powered Unity Editor assistant" class="welcome-subtitle"/>
+                    <ui:Label text="Try: &quot;Create a red cube with physics&quot;" class="welcome-hint"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:ScrollView>
+
+        <!-- Input Bar -->
+        <ui:VisualElement name="input-bar" class="input-bar">
+            <ui:TextField name="message-input" class="message-input"
+                          multiline="true"
+                          value=""
+                          />
+            <ui:Button name="send-btn" text="&#9654;" tooltip="Send (Enter)" class="send-btn"/>
+        </ui:VisualElement>
+
+        <!-- Settings Panel (overlay, hidden by default) -->
+        <ui:VisualElement name="settings-panel" class="settings-panel" style="display:none;">
+            <ui:VisualElement class="settings-header">
+                <ui:Label text="Settings" class="settings-title"/>
+                <ui:Button name="settings-close-btn" text="&#10005;" class="settings-close-btn"/>
+            </ui:VisualElement>
+            <ui:ScrollView class="settings-scroll">
+                <ui:VisualElement class="settings-group">
+                    <ui:Label text="API Key" class="settings-label"/>
+                    <ui:TextField name="api-key-input" class="settings-input" password="true"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="settings-group">
+                    <ui:Label text="Base URL" class="settings-label"/>
+                    <ui:TextField name="base-url-input" class="settings-input" value="https://yunyi.rdzhvip.com/claude"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="settings-group">
+                    <ui:Label text="Model" class="settings-label"/>
+                    <ui:DropdownField name="model-dropdown" class="settings-dropdown"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="settings-group">
+                    <ui:Toggle name="proxy-toggle" label="Use Proxy/Relay API" class="settings-toggle"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="proxy-settings" style="display:none;">
+                    <ui:VisualElement class="settings-group">
+                        <ui:Label text="Custom Model Name (optional)" class="settings-label"/>
+                        <ui:TextField name="custom-model-input" class="settings-input"
+                                      value="" tooltip="Leave empty to use the selected model above"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="settings-group">
+                        <ui:Label text="" name="proxy-hint-label" class="settings-hint"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="settings-group">
+                    <ui:Label text="Max Tokens" class="settings-label"/>
+                    <ui:SliderInt name="max-tokens-slider" low-value="1024" high-value="32768" value="8192" class="settings-slider"/>
+                    <ui:Label name="max-tokens-label" text="8192" class="settings-value-label"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="settings-group">
+                    <ui:Label text="Skills Path" class="settings-label"/>
+                    <ui:TextField name="skills-path-input" class="settings-input"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="settings-group">
+                    <ui:Button name="test-connection-btn" text="Test Connection" class="settings-action-btn"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="settings-group">
+                    <ui:Label name="test-result-label" text="" class="test-result-label"/>
+                </ui:VisualElement>
+            </ui:ScrollView>
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>
