@@ -61,8 +61,27 @@ Editor/
 
 ## 安装
 
-1. 将 `ClaudeUnity` 文件夹放入 Unity 项目的 `Assets/` 目录
-2. 在 Unity Editor 中，进入 `Window > AI > Claude Unity` 打开插件窗口
+### 方法一：手动安装（ZIP）
+1. 解压 `ClaudeUnity.zip`
+2. 将 `ClaudeUnity` 文件夹放入 Unity 项目的 `Assets/Plugins/` 目录（最终路径：`Assets/Plugins/ClaudeUnity/`）
+3. 在 Unity Editor 中，进入 `Window > AI > Claude Unity` 打开插件窗口
+
+### 方法二：Unity Package Manager (UPM)
+```json
+// 在 Packages/manifest.json 中添加：
+{
+  "dependencies": {
+    "com.claude.unity": "file:../ClaudeUnity"
+  }
+}
+```
+或直接通过 UPM 窗口 `Add package from disk` 选择 `package.json`。
+
+### 方法三：导出 .unitypackage
+1. 将 `ClaudeUnity` 文件夹放入项目 `Assets/Plugins/` 中
+2. 在 Unity 中右键 `Assets/Plugins/ClaudeUnity` → `Export Package`
+3. 勾选所有资源，导出为 `ClaudeUnity.unitypackage`
+4. 其他人双击 `.unitypackage` 即可导入
 
 ## 使用
 

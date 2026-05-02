@@ -272,6 +272,17 @@
     color: var(--error);
 }
 
+.cancel-btn {
+    color: var(--error);
+    border-color: var(--error);
+}
+
+.cancel-btn:hover {
+    background-color: rgba(239, 83, 80, 0.15);
+    color: var(--error);
+    border-color: var(--error);
+}
+
 .command-error-text {
     font-size: 10px;
     color: var(--error);

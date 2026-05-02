@@ -1,0 +1,18 @@
+{
+  "name": "com.claude.unity",
+  "version": "1.0.0",
+  "displayName": "Claude Unity",
+  "description": "AI-powered Unity Editor assistant. Integrates Claude AI to control the Unity editor through natural language.",
+  "unity": "2020.3",
+  "author": {
+    "name": "ClaudeUnity",
+    "url": "https://github.com/yangbear/ClaudeUnity"
+  },
+  "keywords": [
+    "claude",
+    "ai",
+    "assistant",
+    "editor",
+    "tool"
+  ]
+}

@@ -22,6 +22,7 @@ namespace ClaudeUnity
         private ScrollView _chatScroll;
         private TextField _messageInput;
         private Button _sendBtn;
+        private Button _cancelBtn;
         private Label _statusLabel;
         private VisualElement _settingsPanel;
         private VisualElement _welcomeElement;
@@ -75,7 +76,7 @@ namespace ClaudeUnity
 
         private void OnDisable()
         {
-            _cts?.Cancel();
+            CancelCurrentRequest();
             SaveSession();
             EditorApplication.update -= ProcessMainThreadQueue;
         }
@@ -99,12 +100,12 @@ namespace ClaudeUnity
 
         public void CreateGUI()
         {
-            var uxmlPath = AssetDatabase.GUIDToAssetPath(
-                AssetDatabase.FindAssets("ClaudeUnityWindow t:VisualTreeAsset",
-                    new[] { "Assets/Plugins/ClaudeUnity" })[0]);
-            var ussPath = AssetDatabase.GUIDToAssetPath(
-                AssetDatabase.FindAssets("ClaudeUnityWindow t:StyleSheet",
-                    new[] { "Assets/Plugins/ClaudeUnity" })[0]);
+            var uxmlGuids = AssetDatabase.FindAssets("ClaudeUnityWindow t:VisualTreeAsset");
+            if (uxmlGuids.Length == 0) { Debug.LogError("[ClaudeUnity] UXML not found! Make sure the plugin is in Assets/Plugins/ClaudeUnity/"); return; }
+            var ussGuids = AssetDatabase.FindAssets("ClaudeUnityWindow t:StyleSheet");
+            if (ussGuids.Length == 0) { Debug.LogError("[ClaudeUnity] USS not found!"); return; }
+            var uxmlPath = AssetDatabase.GUIDToAssetPath(uxmlGuids[0]);
+            var ussPath = AssetDatabase.GUIDToAssetPath(ussGuids[0]);
 
             var uxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(uxmlPath);
             var uss = AssetDatabase.LoadAssetAtPath<StyleSheet>(ussPath);
@@ -122,6 +123,7 @@ namespace ClaudeUnity
             _chatScroll = rootVisualElement.Q<ScrollView>("chat-scroll");
             _messageInput = rootVisualElement.Q<TextField>("message-input");
             _sendBtn = rootVisualElement.Q<Button>("send-btn");
+            _cancelBtn = rootVisualElement.Q<Button>("cancel-btn");
             _statusLabel = rootVisualElement.Q<Label>("status-label");
             _settingsPanel = rootVisualElement.Q<VisualElement>("settings-panel");
             _welcomeElement = rootVisualElement.Q<VisualElement>("welcome");
@@ -209,6 +211,12 @@ namespace ClaudeUnity
 
             rootVisualElement.Q<Button>("settings-btn").clicked += () =>
                 _settingsPanel.style.display = DisplayStyle.Flex;
+            if (_cancelBtn != null)
+                _cancelBtn.clicked += () =>
+                {
+                    CancelCurrentRequest();
+                    _cancelBtn.style.display = DisplayStyle.None;
+                };
             rootVisualElement.Q<Button>("settings-close-btn").clicked += () =>
             {
                 SaveSettings();
@@ -555,7 +563,11 @@ namespace ClaudeUnity
                 count++;
             }
             _filePickerList.itemsSource = _filePickerResults;
+#if UNITY_2022_2_OR_NEWER
+            _filePickerList.RefreshItems();
+#else
             _filePickerList.Rebuild();
+#endif
         }
 
         private void InsertFilePath(string path)
@@ -664,6 +676,7 @@ namespace ClaudeUnity
             _isProcessing = true;
             UpdateStatus("Thinking...");
             _sendBtn.SetEnabled(false);
+            if (_cancelBtn != null) _cancelBtn.style.display = DisplayStyle.Flex;
 
             // Add user message
             _session.AddUserMessage(text);
@@ -688,6 +701,7 @@ namespace ClaudeUnity
                 _isProcessing = false;
                 UpdateStatus("");
                 _sendBtn.SetEnabled(true);
+                if (_cancelBtn != null) _cancelBtn.style.display = DisplayStyle.None;
                 SaveSession();
                 ScrollToBottom();
                 // Re-focus input after everything is done
@@ -1012,6 +1026,14 @@ namespace ClaudeUnity
         private void UpdateStatus(string text)
         {
             if (_statusLabel != null) _statusLabel.text = text;
+        }
+
+        private void CancelCurrentRequest()
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+            UpdateStatus("Cancelled");
         }
 
         private class ToolUseInfo

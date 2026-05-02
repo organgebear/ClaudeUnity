@@ -8,6 +8,7 @@
                 <ui:Label name="status-label" text="" class="toolbar-status"/>
             </ui:VisualElement>
             <ui:VisualElement class="toolbar-right">
+                <ui:Button name="cancel-btn" text="&#9632;" tooltip="Cancel" class="toolbar-btn cancel-btn" style="display:none;"/>
                 <ui:Button name="new-chat-btn" text="+" tooltip="New Chat" class="toolbar-btn"/>
                 <ui:Button name="settings-btn" text="&#9881;" tooltip="Settings" class="toolbar-btn"/>
             </ui:VisualElement>
