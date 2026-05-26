@@ -8,9 +8,9 @@
                 <ui:Label name="status-label" text="" class="toolbar-status"/>
             </ui:VisualElement>
             <ui:VisualElement class="toolbar-right">
-                <ui:Button name="cancel-btn" text="&#9632;" tooltip="Cancel" class="toolbar-btn cancel-btn" style="display:none;"/>
-                <ui:Button name="new-chat-btn" text="+" tooltip="New Chat" class="toolbar-btn"/>
-                <ui:Button name="settings-btn" text="&#9881;" tooltip="Settings" class="toolbar-btn"/>
+                <ui:Button name="cancel-btn" text="Stop" tooltip="Cancel" class="toolbar-btn cancel-btn" style="display:none;"/>
+                <ui:Button name="new-chat-btn" text="New Chat" tooltip="New Chat" class="toolbar-btn new-chat-btn"/>
+                <ui:Button name="settings-btn" text="Settings" tooltip="Settings" class="toolbar-btn settings-btn"/>
             </ui:VisualElement>
         </ui:VisualElement>
 
@@ -34,14 +34,14 @@
                           multiline="true"
                           value=""
                           />
-            <ui:Button name="send-btn" text="&#9654;" tooltip="Send (Enter)" class="send-btn"/>
+            <ui:Button name="send-btn" text="Send" tooltip="Send (Enter)" class="send-btn"/>
         </ui:VisualElement>
 
         <!-- Settings Panel (overlay, hidden by default) -->
         <ui:VisualElement name="settings-panel" class="settings-panel" style="display:none;">
             <ui:VisualElement class="settings-header">
                 <ui:Label text="Settings" class="settings-title"/>
-                <ui:Button name="settings-close-btn" text="&#10005;" class="settings-close-btn"/>
+                <ui:Button name="settings-close-btn" text="X" class="settings-close-btn"/>
             </ui:VisualElement>
             <ui:ScrollView class="settings-scroll">
                 <ui:VisualElement class="settings-group">
@@ -49,25 +49,20 @@
                     <ui:TextField name="api-key-input" class="settings-input" password="true"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="settings-group">
-                    <ui:Label text="Base URL" class="settings-label"/>
+                    <ui:Label text="Anthropic Base URL" class="settings-label"/>
                     <ui:TextField name="base-url-input" class="settings-input" value="https://yunyi.rdzhvip.com/claude"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="settings-group">
-                    <ui:Label text="Model" class="settings-label"/>
-                    <ui:DropdownField name="model-dropdown" class="settings-dropdown"/>
+                    <ui:Label text="OpenAI Base URL" class="settings-label"/>
+                    <ui:TextField name="base-url-openai-input" class="settings-input"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="settings-group">
-                    <ui:Toggle name="proxy-toggle" label="Use Proxy/Relay API" class="settings-toggle"/>
+                    <ui:Label text="Model" class="settings-label"/>
+                    <ui:TextField name="model-input" class="settings-input"/>
                 </ui:VisualElement>
-                <ui:VisualElement name="proxy-settings" style="display:none;">
-                    <ui:VisualElement class="settings-group">
-                        <ui:Label text="Custom Model Name (optional)" class="settings-label"/>
-                        <ui:TextField name="custom-model-input" class="settings-input"
-                                      value="" tooltip="Leave empty to use the selected model above"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="settings-group">
-                        <ui:Label text="" name="proxy-hint-label" class="settings-hint"/>
-                    </ui:VisualElement>
+                <ui:VisualElement class="settings-group">
+                    <ui:Label text="API Provider" class="settings-label"/>
+                    <ui:DropdownField name="api-provider-dropdown" class="settings-dropdown"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="settings-group">
                     <ui:Label text="Max Tokens" class="settings-label"/>

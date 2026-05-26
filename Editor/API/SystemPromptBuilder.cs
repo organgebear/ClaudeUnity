@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 
@@ -365,6 +366,10 @@ namespace ClaudeUnity
             tools.Add(MakeTool("DeleteFile", "删除文件",
                 Props(Prop("path", "string", "文件路径")),
                 new[] { "path" }));
+
+            // Integrate UnitySkills tools (750+ additional skills)
+            try { tools.AddRange(SkillBridge.GetToolDefinitions()); }
+            catch (System.Exception ex) { Debug.LogWarning($"[ClaudeUnity] UnitySkills tools unavailable: {ex.Message}"); }
 
             return tools;
         }

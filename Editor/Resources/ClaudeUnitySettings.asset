@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7b6fa5ccbdede641b7785f358060fb9, type: 3}
   m_Name: ClaudeUnitySettings
   m_EditorClassIdentifier: 
-  model: claude-sonnet-4-5-20250929
+  model: deepseek-v4-pro
   maxTokens: 8192
   temperature: 0
   streamResponses: 1
   skillsPath: 
   customSystemPromptSuffix: 
-  baseUrl: https://yunyi.rdzhvip.com/claude
+  baseUrl: https://api.deepseek.com
+  baseUrlOpenAI: https://api.deepseek.com
   useProxyApi: 1
-  customModelName: 
+  customModelName: deepseek-v4-pro
+  apiProvider: 1

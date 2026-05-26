@@ -11,6 +11,23 @@ namespace ClaudeUnity
 {
     public class ClaudeUnityWindow : EditorWindow
     {
+        private static string StripEmoji(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return input;
+            var sb = new StringBuilder(input.Length);
+            foreach (char c in input)
+            {
+                if (char.IsSurrogate(c)) continue;
+                if (c == '️' || c == '︎') continue;
+                if (c >= '☀' && c <= '➿') continue;
+                if (c >= '─' && c <= '╿') continue;
+                if (c >= '▀' && c <= '▟') continue;
+                if (c == '‍') continue;
+                sb.Append(c);
+            }
+            return sb.ToString();
+        }
+
         private ClaudeApiClient _apiClient;
         private CommandExecutor _commandExecutor;
         private ConversationSession _session;
@@ -30,16 +47,13 @@ namespace ClaudeUnity
         // Settings UI
         private TextField _apiKeyInput;
         private TextField _baseUrlInput;
-        private DropdownField _modelDropdown;
+        private TextField _baseUrlOpenAIInput;
+        private TextField _modelInput;
         private SliderInt _maxTokensSlider;
         private Label _maxTokensLabel;
         private TextField _skillsPathInput;
         private Label _testResultLabel;
-        private Toggle _proxyToggle;
-        private VisualElement _proxySettings;
-        private TextField _customModelInput;
-        private Label _proxyHintLabel;
-
+        private DropdownField _apiProviderDropdown;
         // Streaming state
         private StringBuilder _streamingText;
         private Label _streamingLabel;
@@ -131,15 +145,13 @@ namespace ClaudeUnity
             // Settings UI
             _apiKeyInput = rootVisualElement.Q<TextField>("api-key-input");
             _baseUrlInput = rootVisualElement.Q<TextField>("base-url-input");
-            _modelDropdown = rootVisualElement.Q<DropdownField>("model-dropdown");
+            _baseUrlOpenAIInput = rootVisualElement.Q<TextField>("base-url-openai-input");
+            _modelInput = rootVisualElement.Q<TextField>("model-input");
             _maxTokensSlider = rootVisualElement.Q<SliderInt>("max-tokens-slider");
             _maxTokensLabel = rootVisualElement.Q<Label>("max-tokens-label");
             _skillsPathInput = rootVisualElement.Q<TextField>("skills-path-input");
             _testResultLabel = rootVisualElement.Q<Label>("test-result-label");
-            _proxyToggle = rootVisualElement.Q<Toggle>("proxy-toggle");
-            _proxySettings = rootVisualElement.Q<VisualElement>("proxy-settings");
-            _customModelInput = rootVisualElement.Q<TextField>("custom-model-input");
-            _proxyHintLabel = rootVisualElement.Q<Label>("proxy-hint-label");
+            _apiProviderDropdown = rootVisualElement.Q<DropdownField>("api-provider-dropdown");
 
             SetupEventHandlers();
             SetupFilePicker();
@@ -238,27 +250,19 @@ namespace ClaudeUnity
             var testBtn = rootVisualElement.Q<Button>("test-connection-btn");
             if (testBtn != null) testBtn.clicked += TestConnection;
 
-            // Model dropdown
-            if (_modelDropdown != null)
+            // Model input
+            if (_modelInput != null)
             {
-                var settings = ClaudeUnitySettings.Instance;
-                _modelDropdown.choices = new List<string>(settings.AvailableModels);
-                _modelDropdown.value = settings.Model;
+                _modelInput.value = ClaudeUnitySettings.Instance.Model;
             }
 
-            // Proxy toggle
-            if (_proxyToggle != null)
+            // API Provider dropdown
+            if (_apiProviderDropdown != null)
             {
-                _proxyToggle.RegisterValueChangedCallback(e =>
-                {
-                    if (_proxySettings != null)
-                        _proxySettings.style.display = e.newValue ? DisplayStyle.Flex : DisplayStyle.None;
-                    if (_proxyHintLabel != null)
-                        _proxyHintLabel.text = e.newValue
-                            ? "Proxy mode: URL can be like https://proxy.com/v1 or full path. If streaming fails, will auto-fallback to non-streaming."
-                            : "";
-                });
+                _apiProviderDropdown.choices = new List<string> { "Anthropic", "OpenAI" };
+                _apiProviderDropdown.value = ClaudeUnitySettings.Instance.Provider == ApiProvider.OpenAI ? "OpenAI" : "Anthropic";
             }
+
         }
 
         private void LoadSettings()
@@ -266,16 +270,12 @@ namespace ClaudeUnity
             var s = ClaudeUnitySettings.Instance;
             if (_apiKeyInput != null) _apiKeyInput.value = s.HasApiKey ? "••••••••" : "";
             if (_baseUrlInput != null) _baseUrlInput.value = s.BaseUrl;
-            if (_modelDropdown != null) _modelDropdown.value = s.Model;
+            if (_baseUrlOpenAIInput != null) _baseUrlOpenAIInput.value = s.BaseUrlOpenAI;
+            if (_modelInput != null) _modelInput.value = s.Model;
             if (_maxTokensSlider != null) _maxTokensSlider.value = s.MaxTokens;
             if (_maxTokensLabel != null) _maxTokensLabel.text = s.MaxTokens.ToString();
             if (_skillsPathInput != null) _skillsPathInput.value = s.SkillsPath;
-            if (_proxyToggle != null) _proxyToggle.value = s.UseProxyApi;
-            if (_proxySettings != null)
-                _proxySettings.style.display = s.UseProxyApi ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_customModelInput != null) _customModelInput.value = s.CustomModelName;
-            if (_proxyHintLabel != null && s.UseProxyApi)
-                _proxyHintLabel.text = "Proxy mode: URL can be like https://proxy.com/v1 or full path. If streaming fails, will auto-fallback to non-streaming.";
+            if (_apiProviderDropdown != null) _apiProviderDropdown.value = s.Provider == ApiProvider.OpenAI ? "OpenAI" : "Anthropic";
         }
 
         private void SaveSettings()
@@ -285,11 +285,11 @@ namespace ClaudeUnity
             if (!string.IsNullOrEmpty(keyVal) && keyVal != "••••••••")
                 s.ApiKey = keyVal;
             if (_baseUrlInput != null) s.BaseUrl = _baseUrlInput.value;
-            if (_modelDropdown != null) s.Model = _modelDropdown.value;
+            if (_baseUrlOpenAIInput != null) s.BaseUrlOpenAI = _baseUrlOpenAIInput.value;
+            if (_modelInput != null) s.Model = _modelInput.value;
             if (_maxTokensSlider != null) s.MaxTokens = _maxTokensSlider.value;
             if (_skillsPathInput != null) s.SkillsPath = _skillsPathInput.value;
-            if (_proxyToggle != null) s.UseProxyApi = _proxyToggle.value;
-            if (_customModelInput != null) s.CustomModelName = _customModelInput.value;
+            if (_apiProviderDropdown != null) s.Provider = _apiProviderDropdown.value == "OpenAI" ? ApiProvider.OpenAI : ApiProvider.Anthropic;
         }
 
         private async void TestConnection()
@@ -302,11 +302,11 @@ namespace ClaudeUnity
             SaveSettings();
             var settings = ClaudeUnitySettings.Instance;
 
-            // API mode test
             if (!settings.HasApiKey)
             {
                 _testResultLabel.text = "Please enter an API key first";
                 _testResultLabel.AddToClassList("test-result--error");
+                Debug.LogError("[ClaudeUnity] Test connection: No API key");
                 return;
             }
 
@@ -314,34 +314,61 @@ namespace ClaudeUnity
             {
                 var messages = new List<ApiMessage> { ApiMessage.User("Say hello in 5 words or less.") };
                 var response = await _apiClient.SendMessageAsync(settings, messages, "You are a test.", null);
+                var isOpenAI = settings.Provider == ApiProvider.OpenAI;
 
-                // Parse response to extract the actual text
-                var json = SimpleJsonParser.Parse(response);
-                var content = json.GetArray("content");
-                if (content != null && content.Count > 0)
+                if (isOpenAI)
                 {
-                    var firstBlock = content[0] as Dictionary<string, object>;
-                    if (firstBlock != null)
+                    // Parse OpenAI format: {"choices":[{"message":{"content":"..."}}]}
+                    var json = SimpleJsonParser.Parse(response);
+                    var choices = json.GetArray("choices");
+                    if (choices != null && choices.Count > 0)
                     {
-                        var blockObj = new JsonObject(firstBlock);
-                        var text = blockObj.GetString("text");
-                        if (!string.IsNullOrEmpty(text))
+                        var firstChoice = choices[0] as Dictionary<string, object>;
+                        if (firstChoice != null)
                         {
-                            _testResultLabel.text = $"OK: {text.Trim()}";
-                            _testResultLabel.AddToClassList("test-result--success");
-                            return;
+                            var choiceObj = new JsonObject(firstChoice);
+                            var message = choiceObj.GetObject("message");
+                            var text = message?.GetString("content");
+                            if (!string.IsNullOrEmpty(text))
+                            {
+                                _testResultLabel.text = $"OK: {text.Trim()}";
+                                _testResultLabel.AddToClassList("test-result--success");
+                                return;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Parse Anthropic format: {"content":[{"type":"text","text":"..."}]}
+                    var json = SimpleJsonParser.Parse(response);
+                    var content = json.GetArray("content");
+                    if (content != null && content.Count > 0)
+                    {
+                        var firstBlock = content[0] as Dictionary<string, object>;
+                        if (firstBlock != null)
+                        {
+                            var blockObj = new JsonObject(firstBlock);
+                            var text = blockObj.GetString("text");
+                            if (!string.IsNullOrEmpty(text))
+                            {
+                                _testResultLabel.text = $"OK: {text.Trim()}";
+                                _testResultLabel.AddToClassList("test-result--success");
+                                return;
+                            }
                         }
                     }
                 }
 
-                // Got 200 but unexpected format
                 _testResultLabel.text = $"Unexpected response: {response.Substring(0, Math.Min(response.Length, 150))}";
                 _testResultLabel.AddToClassList("test-result--error");
+                Debug.LogError($"[ClaudeUnity] Test connection: Unexpected response format. Full response: {response}");
             }
             catch (Exception ex)
             {
                 _testResultLabel.text = $"Failed: {ex.Message}";
                 _testResultLabel.AddToClassList("test-result--error");
+                Debug.LogError($"[ClaudeUnity] Test connection failed: {ex}");
             }
         }
 
@@ -391,7 +418,7 @@ namespace ClaudeUnity
             role.AddToClassList("message-role");
             bubble.Add(role);
 
-            var text = new Label(msg.TextContent ?? "");
+            var text = new Label(StripEmoji(msg.TextContent ?? ""));
             text.AddToClassList("message-text");
             bubble.Add(text);
 
@@ -522,7 +549,7 @@ namespace ClaudeUnity
             _filePickerList.itemsSource = _filePickerResults;
             _filePickerList.fixedItemHeight = 24;
             _filePickerList.selectionType = SelectionType.Single;
-            _filePickerList.selectionChanged += (items) =>
+            _filePickerList.onSelectionChange += (items) =>
             {
                 foreach (var item in items)
                 {
@@ -660,6 +687,7 @@ namespace ClaudeUnity
             var settings = ClaudeUnitySettings.Instance;
             if (!settings.HasApiKey)
             {
+                Debug.LogWarning("[ClaudeUnity] Cannot send: No API key configured");
                 _settingsPanel.style.display = DisplayStyle.Flex;
                 return;
             }
@@ -770,7 +798,7 @@ namespace ClaudeUnity
                             case StreamEventType.ContentBlockDelta:
                                 if (!string.IsNullOrEmpty(evt.TextDelta))
                                 {
-                                    _streamingText.Append(evt.TextDelta);
+                                    _streamingText.Append(StripEmoji(evt.TextDelta));
                                     EnqueueMainThread(() =>
                                     {
                                         if (_streamingLabel != null)
@@ -803,6 +831,7 @@ namespace ClaudeUnity
                                 break;
 
                             case StreamEventType.Error:
+                                Debug.LogError($"[ClaudeUnity] Stream error: {evt.ErrorMessage}");
                                 EnqueueMainThread(() =>
                                 {
                                     _streamingText.Append($"\n[Error: {evt.ErrorMessage}]");
@@ -814,6 +843,7 @@ namespace ClaudeUnity
                     },
                     onError: (error) =>
                     {
+                        Debug.LogError($"[ClaudeUnity] API error: {error}");
                         EnqueueMainThread(() =>
                         {
                             _streamingText.Append($"\n[Error: {error}]");
@@ -900,10 +930,20 @@ namespace ClaudeUnity
                     CommandResult result;
                     try
                     {
-                        result = _commandExecutor.Execute(tool.Name, inputObj);
+                        // Try UnitySkills first for richer skill execution
+                        if (SkillBridge.IsAvailable && UnitySkills.SkillRouter.HasSkill(tool.Name))
+                        {
+                            var skillResult = SkillBridge.Execute(tool.Name, tool.InputJson);
+                            result = _commandExecutor.ParseUnitySkillsResult(skillResult, tool.Name);
+                        }
+                        else
+                        {
+                            result = _commandExecutor.Execute(tool.Name, inputObj);
+                        }
                     }
                     catch (Exception ex)
                     {
+                        Debug.LogError($"[ClaudeUnity] Command '{tool.Name}' failed: {ex}");
                         result = CommandResult.Fail(ex.Message);
                     }
 

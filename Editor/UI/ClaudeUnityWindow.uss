@@ -72,22 +72,32 @@
 }
 
 .toolbar-btn {
-    width: 32px;
-    height: 32px;
+    height: 28px;
     margin-left: 4px;
+    padding-left: 10px;
+    padding-right: 10px;
     border-radius: var(--radius-sm);
     background-color: transparent;
     border-width: 1px;
     border-color: var(--border-light);
     color: var(--text-secondary);
-    font-size: 16px;
+    font-size: 11px;
     -unity-text-align: middle-center;
+    white-space: nowrap;
 }
 
 .toolbar-btn:hover {
     background-color: var(--accent-dim);
     border-color: var(--accent);
     color: var(--accent);
+}
+
+.new-chat-btn {
+    width: 60px;
+}
+
+.settings-btn {
+    width: 56px;
 }
 
 /* ── Chat Scroll ── */
@@ -177,7 +187,6 @@
     font-size: 13px;
     color: var(--text-primary);
     white-space: normal;
-    -unity-word-wrap: true;
 }
 
 .message-time {
@@ -346,17 +355,19 @@
 }
 
 .send-btn {
-    width: 36px;
+    width: 52px;
     height: 36px;
     margin-left: 8px;
     border-radius: 18px;
     background-color: var(--accent);
     border-width: 0;
     color: var(--bg-primary);
-    font-size: 14px;
+    font-size: 12px;
     -unity-text-align: middle-center;
     -unity-font-style: bold;
     flex-shrink: 0;
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
 .send-btn:hover {
@@ -512,6 +523,5 @@
     font-size: 10px;
     color: var(--text-muted);
     white-space: normal;
-    -unity-word-wrap: true;
     padding: 4px 0;
 }

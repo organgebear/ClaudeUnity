@@ -127,5 +127,34 @@ namespace ClaudeUnity
                 return CommandResult.Fail(ex.Message);
             }
         }
+
+        /// <summary>
+        /// Parses a UnitySkills JSON result string into a CommandResult.
+        /// </summary>
+        public CommandResult ParseUnitySkillsResult(string resultJson, string commandName)
+        {
+            try
+            {
+                var json = SimpleJsonParser.Parse(resultJson);
+                // UnitySkills returns error responses with "error" field
+                var error = json.GetString("error");
+                if (!string.IsNullOrEmpty(error))
+                    return CommandResult.Fail(error);
+
+                // Check for structured error
+                var errorObj = json.GetObject("error");
+                if (errorObj != null)
+                {
+                    var msg = errorObj.GetString("message") ?? errorObj.GetString("code") ?? "Unknown error";
+                    return CommandResult.Fail(msg);
+                }
+
+                return CommandResult.Ok(resultJson);
+            }
+            catch (Exception ex)
+            {
+                return CommandResult.Fail($"UnitySkills parse error: {ex.Message}");
+            }
+        }
     }
 }

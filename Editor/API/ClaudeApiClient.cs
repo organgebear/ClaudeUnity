@@ -27,17 +27,19 @@ namespace ClaudeUnity
         {
             _cts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
             var ct = _cts.Token;
+            var isOpenAI = settings.Provider == ApiProvider.OpenAI;
 
             try
             {
                 var url = settings.GetMessagesEndpoint();
-                var requestBody = BuildRequestJson(settings, messages, systemPrompt, tools, true);
+                var requestBody = isOpenAI
+                    ? BuildOpenAIRequestJson(settings, messages, systemPrompt, tools, true)
+                    : BuildRequestJson(settings, messages, systemPrompt, tools, true);
 
                 Debug.Log($"[ClaudeUnity] Stream request to: {url}");
 
                 using var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Headers.Add("x-api-key", settings.ApiKey);
-                request.Headers.Add("anthropic-version", API_VERSION);
+                SetHeaders(request, settings, isOpenAI);
                 request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
                 using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
@@ -46,37 +48,42 @@ namespace ClaudeUnity
                 {
                     var errorBody = await response.Content.ReadAsStringAsync();
                     var statusCode = (int)response.StatusCode;
-                    Debug.LogWarning($"[ClaudeUnity] Stream API returned {statusCode}: {errorBody}");
+                    var errorMsg = $"API Error {statusCode}: {errorBody}";
+                    Debug.LogError($"[ClaudeUnity] {errorMsg}");
 
-                    // If streaming returns 404, try non-streaming fallback
-                    if (statusCode == 404)
+                    if (!isOpenAI && statusCode == 404)
                     {
                         Debug.Log("[ClaudeUnity] Streaming returned 404, falling back to non-streaming...");
                         await FallbackNonStreamAsync(settings, messages, systemPrompt, tools, onEvent, onError, ct);
                         return;
                     }
 
-                    onError?.Invoke($"API Error {statusCode}: {errorBody}");
+                    onError?.Invoke(errorMsg);
                     return;
                 }
 
                 using var stream = await response.Content.ReadAsStreamAsync();
                 using var reader = new StreamReader(stream);
 
-                var parser = new StreamParser();
-                while (!reader.EndOfStream && !ct.IsCancellationRequested)
+                if (isOpenAI)
+                    await ReadOpenAIStreamAsync(reader, onEvent, ct);
+                else
                 {
-                    var line = await reader.ReadLineAsync();
-                    if (line == null) break;
-
-                    var evt = parser.ParseLine(line);
-                    if (evt != null)
-                        onEvent?.Invoke(evt);
+                    var parser = new StreamParser();
+                    while (!reader.EndOfStream && !ct.IsCancellationRequested)
+                    {
+                        var line = await reader.ReadLineAsync();
+                        if (line == null) break;
+                        var evt = parser.ParseLine(line);
+                        if (evt != null)
+                            onEvent?.Invoke(evt);
+                    }
                 }
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
+                Debug.LogError($"[ClaudeUnity] Stream error: {ex.Message}");
                 onError?.Invoke(ex.Message);
             }
         }
@@ -94,14 +101,16 @@ namespace ClaudeUnity
             Action<string> onError,
             CancellationToken ct)
         {
+            var isOpenAI = settings.Provider == ApiProvider.OpenAI;
             try
             {
                 var url = settings.GetMessagesEndpoint();
-                var requestBody = BuildRequestJson(settings, messages, systemPrompt, tools, false);
+                var requestBody = isOpenAI
+                    ? BuildOpenAIRequestJson(settings, messages, systemPrompt, tools, false)
+                    : BuildRequestJson(settings, messages, systemPrompt, tools, false);
 
                 using var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Headers.Add("x-api-key", settings.ApiKey);
-                request.Headers.Add("anthropic-version", API_VERSION);
+                SetHeaders(request, settings, isOpenAI);
                 request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
                 using var response = await _http.SendAsync(request, ct);
@@ -109,16 +118,18 @@ namespace ClaudeUnity
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    onError?.Invoke($"API Error {(int)response.StatusCode}: {responseBody}");
+                    var errorMsg = $"API Error {(int)response.StatusCode}: {responseBody}";
+                    Debug.LogError($"[ClaudeUnity] {errorMsg}");
+                    onError?.Invoke(errorMsg);
                     return;
                 }
 
-                // Parse the non-streaming response and emit simulated stream events
-                EmitEventsFromResponse(responseBody, onEvent);
+                EmitEventsFromResponse(responseBody, onEvent, isOpenAI);
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
+                Debug.LogError($"[ClaudeUnity] Fallback error: {ex.Message}");
                 onError?.Invoke(ex.Message);
             }
         }
@@ -127,8 +138,13 @@ namespace ClaudeUnity
         /// Converts a non-streaming API response JSON into StreamEvent callbacks,
         /// so the UI code works identically for both streaming and non-streaming.
         /// </summary>
-        private void EmitEventsFromResponse(string responseJson, Action<StreamEvent> onEvent)
+        private void EmitEventsFromResponse(string responseJson, Action<StreamEvent> onEvent, bool isOpenAI = false)
         {
+            if (isOpenAI)
+            {
+                EmitEventsFromOpenAIResponse(responseJson, onEvent);
+                return;
+            }
             // Parse the response to extract content blocks and stop_reason
             var json = SimpleJsonParser.Parse(responseJson);
             var contentArray = json.GetArray("content");
@@ -213,28 +229,278 @@ namespace ClaudeUnity
             List<ToolDefinition> tools,
             CancellationToken ct = default)
         {
+            var isOpenAI = settings.Provider == ApiProvider.OpenAI;
             var url = settings.GetMessagesEndpoint();
-            var requestBody = BuildRequestJson(settings, messages, systemPrompt, tools, false);
+            var requestBody = isOpenAI
+                ? BuildOpenAIRequestJson(settings, messages, systemPrompt, tools, false)
+                : BuildRequestJson(settings, messages, systemPrompt, tools, false);
 
             Debug.Log($"[ClaudeUnity] Request to: {url}");
 
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Add("x-api-key", settings.ApiKey);
-            request.Headers.Add("anthropic-version", API_VERSION);
+            SetHeaders(request, settings, isOpenAI);
             request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
             using var response = await _http.SendAsync(request, ct);
             var body = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
+            {
+                Debug.LogError($"[ClaudeUnity] HTTP {(int)response.StatusCode}: {body}");
                 throw new HttpRequestException($"HTTP {(int)response.StatusCode}: {body}");
+            }
 
             return body;
+        }
+
+        private static void SetHeaders(HttpRequestMessage request, ClaudeUnitySettings settings, bool isOpenAI)
+        {
+            if (isOpenAI)
+            {
+                request.Headers.Add("Authorization", $"Bearer {settings.ApiKey}");
+            }
+            else
+            {
+                request.Headers.Add("x-api-key", settings.ApiKey);
+                request.Headers.Add("anthropic-version", API_VERSION);
+            }
         }
 
         public void Cancel()
         {
             _cts?.Cancel();
+        }
+
+        // ── OpenAI-compatible API helpers ──
+
+        private string BuildOpenAIRequestJson(
+            ClaudeUnitySettings settings,
+            List<ApiMessage> messages,
+            string systemPrompt,
+            List<ToolDefinition> tools,
+            bool stream)
+        {
+            var parts = new List<string>();
+            parts.Add($"\"model\":\"{Escape(settings.EffectiveModel)}\"");
+            parts.Add($"\"max_tokens\":{settings.MaxTokens}");
+            parts.Add($"\"temperature\":{settings.Temperature.ToString("F1")}");
+            if (stream) parts.Add("\"stream\":true");
+
+            // Messages
+            var msgs = new StringBuilder();
+            msgs.Append("\"messages\":[");
+            if (!string.IsNullOrEmpty(systemPrompt))
+                msgs.Append($"{{\"role\":\"system\",\"content\":\"{Escape(systemPrompt)}\"}},");
+
+            bool firstMsg = true;
+            foreach (var msg in messages)
+            {
+                var msgParts = SerializeMessagesOpenAI(msg);
+                if (msgParts == null || msgParts.Count == 0) continue;
+                foreach (var part in msgParts)
+                {
+                    if (!firstMsg) msgs.Append(",");
+                    msgs.Append(part);
+                    firstMsg = false;
+                }
+            }
+            msgs.Append("]");
+            parts.Add(msgs.ToString());
+
+            // Tools
+            if (tools != null && tools.Count > 0)
+            {
+                var toolsSb = new StringBuilder();
+                toolsSb.Append("\"tools\":[");
+                for (int i = 0; i < tools.Count; i++)
+                {
+                    if (i > 0) toolsSb.Append(",");
+                    toolsSb.Append(SerializeToolOpenAI(tools[i]));
+                }
+                toolsSb.Append("]");
+                parts.Add(toolsSb.ToString());
+            }
+
+            if (stream) parts.Add("\"stream_options\":{\"include_usage\":true}");
+
+            return "{" + string.Join(",", parts) + "}";
+        }
+
+        /// <summary>
+        /// Serializes one ApiMessage into one or more OpenAI-format JSON strings.
+        /// Tool result messages are split into individual "tool" role messages per block.
+        /// </summary>
+        private List<string> SerializeMessagesOpenAI(ApiMessage msg)
+        {
+            var results = new List<string>();
+            if (msg.content is string text)
+            {
+                results.Add($"{{\"role\":\"{msg.role}\",\"content\":\"{Escape(text)}\"}}");
+            }
+            else if (msg.content is List<ContentBlock> blocks)
+            {
+                var toolCalls = new List<ContentBlock>();
+                var toolResults = new List<ContentBlock>();
+                var textBlocks = new List<ContentBlock>();
+
+                foreach (var block in blocks)
+                {
+                    switch (block.type)
+                    {
+                        case "tool_use": toolCalls.Add(block); break;
+                        case "tool_result": toolResults.Add(block); break;
+                        default: textBlocks.Add(block); break;
+                    }
+                }
+
+                // Tool results → individual "tool" messages
+                foreach (var tr in toolResults)
+                {
+                    results.Add($"{{\"role\":\"tool\",\"tool_call_id\":\"{Escape(tr.tool_use_id)}\",\"content\":\"{Escape(tr.content ?? "")}\"}}");
+                }
+
+                // Tool calls → assistant message with tool_calls
+                if (toolCalls.Count > 0)
+                {
+                    var sb = new StringBuilder();
+                    sb.Append($"{{\"role\":\"{msg.role}\",\"content\":null,\"tool_calls\":[");
+                    for (int i = 0; i < toolCalls.Count; i++)
+                    {
+                        if (i > 0) sb.Append(",");
+                        var tc = toolCalls[i];
+                        sb.Append("{");
+                        sb.Append($"\"id\":\"{Escape(tc.id)}\",\"type\":\"function\",");
+                        sb.Append($"\"function\":{{\"name\":\"{Escape(tc.name)}\",\"arguments\":{SerializeDict(tc.input)}}}");
+                        sb.Append("}");
+                    }
+                    sb.Append("]}");
+                    results.Add(sb.ToString());
+                }
+
+                // Text blocks → single message
+                if (textBlocks.Count > 0)
+                {
+                    var sb = new StringBuilder();
+                    for (int i = 0; i < textBlocks.Count; i++)
+                    {
+                        if (i > 0) sb.Append("\\n");
+                        sb.Append(Escape(textBlocks[i].text ?? ""));
+                    }
+                    results.Add($"{{\"role\":\"{msg.role}\",\"content\":\"{sb}\"}}");
+                }
+            }
+            return results;
+        }
+
+        private string SerializeToolOpenAI(ToolDefinition tool)
+        {
+            var sb = new StringBuilder();
+            sb.Append("{\"type\":\"function\",\"function\":{");
+            sb.AppendFormat("\"name\":\"{0}\",", Escape(tool.name));
+            if (!string.IsNullOrEmpty(tool.description))
+                sb.AppendFormat("\"description\":\"{0}\",", Escape(tool.description));
+            sb.AppendFormat("\"parameters\":{0}", SerializeDict(tool.input_schema));
+            sb.Append("}}");
+            return sb.ToString();
+        }
+
+        private async Task ReadOpenAIStreamAsync(StreamReader reader, Action<StreamEvent> onEvent, CancellationToken ct)
+        {
+            var parser = new OpenAIStreamParser();
+            while (!reader.EndOfStream && !ct.IsCancellationRequested)
+            {
+                var line = await reader.ReadLineAsync();
+                if (line == null) break;
+
+                var events = parser.ParseLine(line);
+                if (events != null)
+                {
+                    foreach (var evt in events)
+                        onEvent?.Invoke(evt);
+                }
+            }
+        }
+
+        private void EmitEventsFromOpenAIResponse(string responseJson, Action<StreamEvent> onEvent)
+        {
+            var json = SimpleJsonParser.Parse(responseJson);
+            var choices = json.GetArray("choices");
+            if (choices == null || choices.Count == 0) return;
+
+            var firstChoice = choices[0] as Dictionary<string, object>;
+            if (firstChoice == null) return;
+            var choice = new JsonObject(firstChoice);
+            var message = choice.GetObject("message");
+            if (message == null) return;
+
+            var content = message.GetString("content");
+            var toolCalls = message.GetArray("tool_calls");
+            var finishReason = choice.GetString("finish_reason") ?? "stop";
+            int index = 0;
+
+            if (!string.IsNullOrEmpty(content))
+            {
+                onEvent?.Invoke(new StreamEvent
+                {
+                    Type = StreamEventType.ContentBlockStart,
+                    Index = index,
+                    BlockType = "text"
+                });
+                onEvent?.Invoke(new StreamEvent
+                {
+                    Type = StreamEventType.ContentBlockDelta,
+                    Index = index,
+                    TextDelta = content
+                });
+                onEvent?.Invoke(new StreamEvent
+                {
+                    Type = StreamEventType.ContentBlockStop,
+                    Index = index
+                });
+                index++;
+            }
+
+            if (toolCalls != null)
+            {
+                foreach (var tc in toolCalls)
+                {
+                    if (tc is Dictionary<string, object> tcDict)
+                    {
+                        var tcObj = new JsonObject(tcDict);
+                        var function = tcObj.GetObject("function");
+                        var tcId = tcObj.GetString("id") ?? "";
+                        var tcName = function?.GetString("name") ?? "";
+                        var tcArgs = function?.GetString("arguments") ?? "{}";
+
+                        onEvent?.Invoke(new StreamEvent
+                        {
+                            Type = StreamEventType.ContentBlockStart,
+                            Index = index,
+                            BlockType = "tool_use",
+                            ToolUseId = tcId,
+                            ToolName = tcName
+                        });
+                        onEvent?.Invoke(new StreamEvent
+                        {
+                            Type = StreamEventType.ContentBlockDelta,
+                            Index = index,
+                            InputJsonDelta = tcArgs
+                        });
+                        onEvent?.Invoke(new StreamEvent
+                        {
+                            Type = StreamEventType.ContentBlockStop,
+                            Index = index
+                        });
+                        index++;
+                    }
+                }
+            }
+
+            onEvent?.Invoke(new StreamEvent
+            {
+                Type = StreamEventType.MessageDelta,
+                StopReason = finishReason
+            });
         }
 
         private string BuildRequestJson(

@@ -1,0 +1,28 @@
+{
+    "name": "UnitySkills",
+    "rootNamespace": "UnitySkills",
+    "references": [
+        "UnityEditor.CoreModule",
+        "UnityEngine.CoreModule",
+        "UnityEngine.IMGUIModule",
+        "UnityEngine.UIElementsModule",
+        "UnityEngine.PhysicsModule",
+        "Unity.Timeline",
+        "Unity.Timeline.Editor",
+        "UnityEngine.AudioModule",
+        "UnityEngine.AnimationModule",
+        "UnityEngine.UIModule",
+        "UnityEngine.UnityWebRequestModule",
+        "UnityEngine.TextRenderingModule",
+        "UnityEngine.ImageConversionModule"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

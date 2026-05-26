@@ -4,6 +4,12 @@ using System;
 
 namespace ClaudeUnity
 {
+    public enum ApiProvider
+    {
+        Anthropic,
+        OpenAI
+    }
+
     public class ClaudeUnitySettings : ScriptableObject
     {
         private const string ASSET_PATH = "Assets/Plugins/ClaudeUnity/Editor/Resources/ClaudeUnitySettings.asset";
@@ -16,8 +22,10 @@ namespace ClaudeUnity
         [SerializeField] private string skillsPath = "";
         [SerializeField] private string customSystemPromptSuffix = "";
         [SerializeField] private string baseUrl = "https://yunyi.rdzhvip.com/claude";
+        [SerializeField] private string baseUrlOpenAI = "";
         [SerializeField] private bool useProxyApi = true;
         [SerializeField] private string customModelName = "";
+        [SerializeField] private ApiProvider apiProvider = ApiProvider.OpenAI;
 
         public string Model { get => model; set { model = value; Save(); } }
         public int MaxTokens { get => maxTokens; set { maxTokens = value; Save(); } }
@@ -26,13 +34,15 @@ namespace ClaudeUnity
         public string SkillsPath { get => skillsPath; set { skillsPath = value; Save(); } }
         public string CustomSystemPromptSuffix { get => customSystemPromptSuffix; set { customSystemPromptSuffix = value; Save(); } }
         public string BaseUrl { get => baseUrl; set { baseUrl = value; Save(); } }
+        public string BaseUrlOpenAI { get => baseUrlOpenAI; set { baseUrlOpenAI = value; Save(); } }
         public bool UseProxyApi { get => useProxyApi; set { useProxyApi = value; Save(); } }
         public string CustomModelName { get => customModelName; set { customModelName = value; Save(); } }
+        public ApiProvider Provider { get => apiProvider; set { apiProvider = value; Save(); } }
 
         /// <summary>
         /// Returns the effective model name. If using proxy API with a custom model name, use that instead.
         /// </summary>
-        public string EffectiveModel => useProxyApi && !string.IsNullOrEmpty(customModelName) ? customModelName : model;
+        public string EffectiveModel => string.IsNullOrEmpty(model) ? "claude-sonnet-4-20250514" : model;
 
         /// <summary>
         /// Builds the full API endpoint URL, handling various base URL formats.
@@ -40,7 +50,20 @@ namespace ClaudeUnity
         /// </summary>
         public string GetMessagesEndpoint()
         {
-            var url = baseUrl.TrimEnd('/');
+            var effectiveUrl = apiProvider == ApiProvider.OpenAI && !string.IsNullOrEmpty(baseUrlOpenAI)
+                ? baseUrlOpenAI
+                : baseUrl;
+            var url = effectiveUrl.TrimEnd('/');
+
+            if (apiProvider == ApiProvider.OpenAI)
+            {
+                if (url.EndsWith("/v1/chat/completions", System.StringComparison.OrdinalIgnoreCase))
+                    return url;
+                if (url.EndsWith("/v1", System.StringComparison.OrdinalIgnoreCase))
+                    return url + "/chat/completions";
+                return url + "/v1/chat/completions";
+            }
+
             if (url.EndsWith("/v1/messages", System.StringComparison.OrdinalIgnoreCase))
                 return url;
             if (url.EndsWith("/v1", System.StringComparison.OrdinalIgnoreCase))

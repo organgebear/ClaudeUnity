@@ -45,15 +45,15 @@ namespace ClaudeUnity
             EditorGUILayout.Space(5);
 
             // Base URL
-            var newUrl = EditorGUILayout.TextField("Base URL", _settings.BaseUrl);
+            EditorGUILayout.LabelField("Base URLs", EditorStyles.boldLabel);
+            var newUrl = EditorGUILayout.TextField("Anthropic Base URL", _settings.BaseUrl);
             if (newUrl != _settings.BaseUrl) _settings.BaseUrl = newUrl;
+            var newOpenAIUrl = EditorGUILayout.TextField("OpenAI Base URL", _settings.BaseUrlOpenAI);
+            if (newOpenAIUrl != _settings.BaseUrlOpenAI) _settings.BaseUrlOpenAI = newOpenAIUrl;
 
             // Model
-            var models = _settings.AvailableModels;
-            var currentIndex = System.Array.IndexOf(models, _settings.Model);
-            if (currentIndex < 0) currentIndex = 0;
-            var newIndex = EditorGUILayout.Popup("Model", currentIndex, models);
-            if (newIndex != currentIndex) _settings.Model = models[newIndex];
+            var newModel = EditorGUILayout.TextField("Model", _settings.Model);
+            if (newModel != _settings.Model) _settings.Model = newModel;
 
             // Max Tokens
             var newTokens = EditorGUILayout.IntSlider("Max Tokens", _settings.MaxTokens, 1024, 32768);
@@ -67,24 +67,11 @@ namespace ClaudeUnity
             var newStream = EditorGUILayout.Toggle("Stream Responses", _settings.StreamResponses);
             if (newStream != _settings.StreamResponses) _settings.StreamResponses = newStream;
 
-            EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Proxy / Relay API", EditorStyles.boldLabel);
-            EditorGUILayout.Space(3);
-
-            // Use Proxy
-            var newProxy = EditorGUILayout.Toggle("Use Proxy/Relay API", _settings.UseProxyApi);
-            if (newProxy != _settings.UseProxyApi) _settings.UseProxyApi = newProxy;
-
-            if (_settings.UseProxyApi)
-            {
-                EditorGUI.indentLevel++;
-                var newCustomModel = EditorGUILayout.TextField("Custom Model Name", _settings.CustomModelName);
-                if (newCustomModel != _settings.CustomModelName) _settings.CustomModelName = newCustomModel;
-                EditorGUILayout.HelpBox(
-                    "Proxy mode: Base URL can include /v1 path. If streaming fails (404), the plugin will auto-fallback to non-streaming. Custom model name overrides the dropdown selection.",
-                    MessageType.Info);
-                EditorGUI.indentLevel--;
-            }
+            // API Provider
+            var providers = new[] { "Anthropic", "OpenAI" };
+            var currentProvider = _settings.Provider == ApiProvider.OpenAI ? 1 : 0;
+            var newProvider = EditorGUILayout.Popup("API Provider", currentProvider, providers);
+            if (newProvider != currentProvider) _settings.Provider = newProvider == 1 ? ApiProvider.OpenAI : ApiProvider.Anthropic;
 
             EditorGUILayout.Space(5);
 

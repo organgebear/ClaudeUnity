@@ -1,0 +1,13 @@
+# Build artifacts
+*.zip
+*.unitypackage
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vs/
+*.csproj
+*.sln

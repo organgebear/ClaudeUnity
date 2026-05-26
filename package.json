@@ -1,18 +1,23 @@
 {
   "name": "com.claude.unity",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "displayName": "Claude Unity",
-  "description": "AI-powered Unity Editor assistant. Integrates Claude AI to control the Unity editor through natural language.",
-  "unity": "2020.3",
+  "description": "AI-powered Unity Editor assistant with 750+ skills via UnitySkills integration. Supports Claude API, OpenAI-compatible APIs, and DeepSeek.",
+  "unity": "2022.3",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.0.2"
+  },
   "author": {
     "name": "ClaudeUnity",
-    "url": "https://github.com/yangbear/ClaudeUnity"
+    "url": "https://github.com/organgebear/ClaudeUnity"
   },
   "keywords": [
     "claude",
     "ai",
     "assistant",
     "editor",
-    "tool"
+    "unity-skills",
+    "automation",
+    "deepseek"
   ]
 }

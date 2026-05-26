@@ -1,10 +1,12 @@
 # Claude Unity
 
-一个 Unity Editor 插件，集成 Claude AI 助手，通过自然语言命令控制 Unity 编辑器进行游戏开发。
+一个 Unity Editor 插件，集成 Claude AI 助手，通过自然语言命令控制 Unity 编辑器进行游戏开发。集成 UnitySkills 引擎，提供 **750+ REST 技能** 覆盖几乎所有的 Unity 编辑器操作。
 
 ## 功能特性
 
-- **AI 对话界面**：在 Unity Editor 中与 Claude AI 进行实时对话
+- **AI 对话界面**：在 Unity Editor 中与 AI 进行实时对话
+- **多 API 支持**：Claude API / OpenAI 兼容 API / DeepSeek 多后端支持
+- **UnitySkills 引擎**：集成 750+ REST 技能，覆盖 GameObject、材质、动画、物理、UI 等几乎所有操作
 - **编辑器自动化**：通过自然语言命令执行 Unity 编辑器操作
 - **场景管理**：创建、删除、修改 GameObject 及其组件
 - **资源管理**：查找、创建、管理项目资源
@@ -20,42 +22,28 @@
 ```
 Editor/
 ├── API/                          # Claude API 集成
-│   ├── ClaudeApiClient.cs       # API 客户端，处理流式请求
+│   ├── ClaudeApiClient.cs       # API 客户端，支持 OpenAI/Anthropic 格式
 │   ├── ClaudeApiTypes.cs        # API 数据类型定义
 │   ├── StreamParser.cs          # 流式响应解析器
 │   ├── SimpleJsonParser.cs      # JSON 解析工具
 │   └── SystemPromptBuilder.cs   # 系统提示词和工具定义生成
 ├── Commands/                     # 命令执行系统
-│   ├── CommandExecutor.cs       # 命令分发器
+│   ├── CommandExecutor.cs       # 命令分发器（支持 UnitySkills 路由）
 │   ├── CommandResult.cs         # 命令执行结果
 │   ├── ICommandHandler.cs       # 命令处理器接口
 │   └── Handlers/                # 各类命令处理器
-│       ├── GameObjectHandler.cs      # GameObject 操作
-│       ├── ComponentHandler.cs       # 组件操作
-│       ├── SceneHandler.cs           # 场景操作
-│       ├── PrefabHandler.cs          # 预制体操作
-│       ├── AssetHandler.cs           # 资源操作
-│       ├── MaterialHandler.cs        # 材质操作
-│       ├── LightHandler.cs           # 灯光操作
-│       ├── AnimatorHandler.cs        # 动画操作
-│       ├── UIHandler.cs              # UI 操作
-│       ├── ScriptHandler.cs          # 脚本操作
-│       ├── FileSystemHandler.cs      # 文件系统操作
-│       ├── EditorControlHandler.cs   # 编辑器控制
-│       ├── DebugHandler.cs           # 调试操作
-│       ├── ProjectHandler.cs         # 项目操作
-│       └── ValidationHandler.cs      # 验证操作
 ├── Core/                         # 核心功能
 │   ├── ClaudeUnityWindow.cs     # 主 UI 窗口
-│   ├── ClaudeUnitySettings.cs   # 设置管理
+│   ├── ClaudeUnitySettings.cs   # 设置管理（多后端支持）
 │   ├── ClaudeUnitySettingsProvider.cs  # 设置提供器
-│   ├── SessionState.cs          # 会话状态
-│   └── DeferredRefresh.cs       # 延迟刷新管理
+│   ├── SkillBridge.cs           # UnitySkills 桥接层
+│   └── ...
 ├── UI/                           # UI 资源
 │   ├── ClaudeUnityWindow.uxml   # UI 布局
 │   └── ClaudeUnityWindow.uss    # UI 样式
 ├── Resources/                    # 资源文件
-│   └── ClaudeUnitySettings.asset # 默认设置
+├── UnitySkills/                  # UnitySkills REST 技能引擎
+│   └── Editor/Skills/           # 60+ 技能模块，750+ REST 技能
 └── ClaudeUnity.asmdef           # 程序集定义
 ```
 

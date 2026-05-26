@@ -1,7 +1,7 @@
 {
     "name": "ClaudeUnity",
     "rootNamespace": "ClaudeUnity",
-    "references": [],
+    "references": ["UnitySkills"],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
